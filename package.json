@@ -3,13 +3,19 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "preinstall": "npx only-allow pnpm",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "dev:server": "pnpm --filter @workspace/api-server dev",
+    "dev:tms": "pnpm --filter @workspace/tms dev",
+    "dev": "concurrently -n \"server,tms\" -c \"blue,green\" \"pnpm dev:server\" \"pnpm dev:tms\"",
+    "seed": "pnpm --filter @workspace/scripts seed"
   },
   "private": true,
   "devDependencies": {
+    "concurrently": "catalog:",
+    "cross-env": "catalog:",
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
   }
