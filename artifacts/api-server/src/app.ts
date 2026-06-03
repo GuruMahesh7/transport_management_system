@@ -55,7 +55,7 @@ if (staticPath) {
   app.use(express.static(staticPath));
   
   // Catch-all route to serve index.html for client-side routing (wouter SPA)
-  app.get("*", (req, res, next) => {
+  app.get("*splat", (req, res, next) => {
     if (req.path.startsWith("/api")) {
       return next();
     }
