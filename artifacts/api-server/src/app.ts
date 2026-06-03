@@ -34,8 +34,23 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", router);
 
 // Serve static frontend assets in production if they exist
-const staticPath = process.env.STATIC_ASSETS_PATH || path.resolve(process.cwd(), "artifacts/tms/dist/public");
-if (fs.existsSync(staticPath)) {
+const candidatePaths = [
+  process.env.STATIC_ASSETS_PATH,
+  path.resolve(process.cwd(), "artifacts/tms/dist/public"),
+  path.resolve(process.cwd(), "../tms/dist/public"),
+  path.resolve(import.meta.dirname, "../../tms/dist/public"),
+  path.resolve(import.meta.dirname, "../../../tms/dist/public"),
+].filter(Boolean) as string[];
+
+let staticPath = "";
+for (const p of candidatePaths) {
+  if (fs.existsSync(p)) {
+    staticPath = p;
+    break;
+  }
+}
+
+if (staticPath) {
   logger.info({ staticPath }, "Serving static frontend assets");
   app.use(express.static(staticPath));
   
@@ -47,7 +62,7 @@ if (fs.existsSync(staticPath)) {
     res.sendFile(path.resolve(staticPath, "index.html"));
   });
 } else {
-  logger.warn({ staticPath }, "Static assets directory not found. Frontend not served from backend.");
+  logger.warn({ checkedPaths: candidatePaths }, "Static assets directory not found. Frontend not served from backend.");
 }
 
 export default app;
