@@ -9,9 +9,11 @@
 export interface ParcelInput {
   senderName: string;
   senderPhone: string;
+  senderEmail?: string;
   senderAddress: string;
   receiverName: string;
   receiverPhone: string;
+  receiverEmail?: string;
   receiverAddress: string;
   numBoxes: number;
   weightKg: number;

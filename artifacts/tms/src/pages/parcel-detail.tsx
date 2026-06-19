@@ -78,6 +78,17 @@ export default function ParcelDetail() {
   const currentIdx = STATUS_ORDER.indexOf(parcel.currentStatus);
   const nextStatus = NEXT_STATUS[parcel.currentStatus];
 
+  let canAdvance = false;
+  if (user?.role === "SUPER_ADMIN") {
+    canAdvance = true;
+  } else if (user?.hubId) {
+    if (nextStatus === "RECEIVED_AT_ORIGIN" || nextStatus === "DISPATCHED") {
+      canAdvance = user.hubId === parcel.sourceHubId;
+    } else if (nextStatus === "RECEIVED_AT_DESTINATION" || nextStatus === "READY_FOR_PICKUP" || nextStatus === "DELIVERED") {
+      canAdvance = user.hubId === parcel.destinationHubId;
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
@@ -90,7 +101,7 @@ export default function ParcelDetail() {
             {parcel.currentStatus.replace(/_/g, " ")}
           </span>
         </div>
-        {nextStatus && (
+        {canAdvance && nextStatus && (
           <Button className="ml-auto" onClick={handleAdvanceStatus} disabled={updateStatus.isPending} data-testid="button-advance-status">
             {updateStatus.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
             {NEXT_LABEL[parcel.currentStatus]}
@@ -145,6 +156,7 @@ export default function ParcelDetail() {
           <CardContent className="space-y-1 text-sm">
             <p className="font-medium">{parcel.senderName}</p>
             <p className="text-muted-foreground">{parcel.senderPhone}</p>
+            {parcel.senderEmail && <p className="text-muted-foreground">{parcel.senderEmail}</p>}
             <p className="text-muted-foreground">{parcel.senderAddress}</p>
           </CardContent>
         </Card>
@@ -153,6 +165,7 @@ export default function ParcelDetail() {
           <CardContent className="space-y-1 text-sm">
             <p className="font-medium">{parcel.receiverName}</p>
             <p className="text-muted-foreground">{parcel.receiverPhone}</p>
+            {parcel.receiverEmail && <p className="text-muted-foreground">{parcel.receiverEmail}</p>}
             <p className="text-muted-foreground">{parcel.receiverAddress}</p>
           </CardContent>
         </Card>

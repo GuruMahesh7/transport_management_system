@@ -53,8 +53,18 @@ router.get("/dashboard/stats", requireAuth, async (req, res) => {
       dateFilter
     ));
 
-  const [openComplaints] = await db.select({ count: sql<number>`count(*)` }).from(complaintsTable)
-    .where(or(eq(complaintsTable.status, "RAISED"), eq(complaintsTable.status, "INVESTIGATING"))!);
+  let openComplaintsQuery = db.select({ count: sql<number>`count(*)` })
+    .from(complaintsTable)
+    .innerJoin(parcelsTable, eq(complaintsTable.parcelId, parcelsTable.id));
+
+  let openComplaintsWhere = or(eq(complaintsTable.status, "RAISED"), eq(complaintsTable.status, "INVESTIGATING"))!;
+  if (scopedHubId) {
+    openComplaintsWhere = and(
+      openComplaintsWhere,
+      or(eq(parcelsTable.sourceHubId, scopedHubId), eq(parcelsTable.destinationHubId, scopedHubId))!
+    )!;
+  }
+  const [openComplaints] = await openComplaintsQuery.where(openComplaintsWhere);
 
   res.json({
     todayBookings: Number(todayBooked.count),
@@ -99,8 +109,13 @@ router.get("/dashboard/hub-breakdown", requireAuth, async (req, res) => {
       .where(and(or(eq(parcelsTable.sourceHubId, hub.id), eq(parcelsTable.destinationHubId, hub.id))!, eq(parcelsTable.currentStatus, "DELIVERED")));
     const [pending] = await db.select({ count: sql<number>`count(*)` }).from(parcelsTable)
       .where(and(or(eq(parcelsTable.sourceHubId, hub.id), eq(parcelsTable.destinationHubId, hub.id))!, or(eq(parcelsTable.currentStatus, "BOOKED"), eq(parcelsTable.currentStatus, "RECEIVED_AT_ORIGIN"), eq(parcelsTable.currentStatus, "READY_FOR_PICKUP"))!));
-    const [complaints] = await db.select({ count: sql<number>`count(*)` }).from(complaintsTable)
-      .where(or(eq(complaintsTable.status, "RAISED"), eq(complaintsTable.status, "INVESTIGATING"))!);
+    const [complaints] = await db.select({ count: sql<number>`count(*)` })
+      .from(complaintsTable)
+      .innerJoin(parcelsTable, eq(complaintsTable.parcelId, parcelsTable.id))
+      .where(and(
+        or(eq(complaintsTable.status, "RAISED"), eq(complaintsTable.status, "INVESTIGATING"))!,
+        or(eq(parcelsTable.sourceHubId, hub.id), eq(parcelsTable.destinationHubId, hub.id))!
+      ));
     return { hubId: hub.id, hubName: hub.hubName, hubCode: hub.hubCode, todayBookings: Number(todayBooked.count), inTransit: Number(inTransit.count), delivered: Number(delivered.count), pending: Number(pending.count), complaints: Number(complaints.count) };
   }));
   res.json(breakdown);

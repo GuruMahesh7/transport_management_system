@@ -4,6 +4,7 @@ import { eq, and, gte, lte, desc, sql, or, ilike } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { generateAwbNumber } from "../lib/awb";
 import { createAuditLog } from "../lib/audit";
+import { sendParcelEmailNotification } from "../lib/email";
 
 const router = Router();
 
@@ -86,10 +87,10 @@ router.get("/parcels", requireAuth, async (req, res) => {
 
 router.post("/parcels", requireAuth, async (req, res) => {
   const staff = (req as any).staff;
-  const { senderName, senderPhone, senderAddress, receiverName, receiverPhone, receiverAddress, numBoxes, weightKg, parcelType, charges, remarks, sourceHubId, destinationHubId } = req.body;
+  const { senderName, senderPhone, senderEmail, senderAddress, receiverName, receiverPhone, receiverEmail, receiverAddress, numBoxes, weightKg, parcelType, charges, remarks, sourceHubId, destinationHubId } = req.body;
   const awbNumber = await generateAwbNumber();
   const [parcel] = await db.insert(parcelsTable).values({
-    awbNumber, senderName, senderPhone, senderAddress, receiverName, receiverPhone, receiverAddress,
+    awbNumber, senderName, senderPhone, senderEmail: senderEmail || null, senderAddress, receiverName, receiverPhone, receiverEmail: receiverEmail || null, receiverAddress,
     numBoxes, weightKg: String(weightKg), parcelType, charges: String(charges), remarks: remarks || null,
     sourceHubId, destinationHubId, currentStatus: "BOOKED", bookedBy: staff.id,
   }).returning();
@@ -133,7 +134,7 @@ router.get("/parcels/:parcelId", requireAuth, async (req, res) => {
 
 router.patch("/parcels/:parcelId", requireAuth, async (req, res) => {
   const parcelId = parseInt(req.params.parcelId as string);
-  const allowed = ["senderName", "senderPhone", "senderAddress", "receiverName", "receiverPhone", "receiverAddress", "numBoxes", "weightKg", "parcelType", "charges", "remarks"];
+  const allowed = ["senderName", "senderPhone", "senderEmail", "senderAddress", "receiverName", "receiverPhone", "receiverEmail", "receiverAddress", "numBoxes", "weightKg", "parcelType", "charges", "remarks"];
   const updates: any = {};
   for (const k of allowed) { if (req.body[k] !== undefined) updates[k] = req.body[k]; }
   if (updates.weightKg) updates.weightKg = String(updates.weightKg);
@@ -151,11 +152,28 @@ router.patch("/parcels/:parcelId/status", requireAuth, async (req, res) => {
   const [parcel] = await db.select().from(parcelsTable).where(eq(parcelsTable.id, parcelId)).limit(1);
   if (!parcel) { res.status(404).json({ error: "Parcel not found" }); return; }
 
+  if (staff.role !== "SUPER_ADMIN") {
+    if (status === "RECEIVED_AT_ORIGIN" || status === "DISPATCHED") {
+      if (staff.hubId !== parcel.sourceHubId) {
+        res.status(403).json({ error: "Only source hub staff can update to this status" });
+        return;
+      }
+    } else if (status === "RECEIVED_AT_DESTINATION" || status === "READY_FOR_PICKUP" || status === "DELIVERED") {
+      if (staff.hubId !== parcel.destinationHubId) {
+        res.status(403).json({ error: "Only destination hub staff can update to this status" });
+        return;
+      }
+    }
+  }
+
   await db.update(parcelsTable).set({ currentStatus: status }).where(eq(parcelsTable.id, parcelId));
   await db.insert(parcelStatusHistoryTable).values({ parcelId, status, hubId: hubId || staff.hubId || null, updatedBy: staff.id, notes: notes || null });
   await createAuditLog({ action: "STATUS_CHANGE", entityType: "parcel", entityId: parcelId, oldValue: { status: parcel.currentStatus }, newValue: { status }, performedBy: staff.id, hubId: hubId || staff.hubId, description: `Changed parcel ${parcel.awbNumber} status from ${parcel.currentStatus} to ${status}` });
 
   const updated = await db.select().from(parcelsTable).where(eq(parcelsTable.id, parcelId)).limit(1);
+  sendParcelEmailNotification(updated[0], status).catch(err => {
+    console.error("Failed to send email notification:", err);
+  });
   const history = await db.select().from(parcelStatusHistoryTable).where(eq(parcelStatusHistoryTable.parcelId, parcelId)).orderBy(parcelStatusHistoryTable.timestamp);
   const enriched = await enrichParcel(updated[0]);
   const enrichedHistory = await Promise.all(history.map(async h => {

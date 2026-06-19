@@ -12,9 +12,13 @@ export interface ParcelDetail {
   awbNumber: string;
   senderName: string;
   senderPhone: string;
+  /** @nullable */
+  senderEmail?: string | null;
   senderAddress?: string;
   receiverName: string;
   receiverPhone: string;
+  /** @nullable */
+  receiverEmail?: string | null;
   receiverAddress?: string;
   numBoxes: number;
   weightKg: number;

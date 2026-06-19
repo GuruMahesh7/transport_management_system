@@ -35,6 +35,7 @@ function ComplaintDetail({ complaint, onClose }: { complaint: any; onClose: () =
     updateComplaint.mutate({ complaintId: complaint.id, data }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListComplaintsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
         toast({ title: "Complaint updated" });
         onClose();
       },
@@ -94,25 +95,47 @@ function NewComplaintForm({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const createComplaint = useCreateComplaint();
+  const [isFetchingAwb, setIsFetchingAwb] = useState(false);
   const { register, handleSubmit, setValue, formState: { errors } } = useForm({
-    defaultValues: { parcelId: 0, complaintType: "DAMAGED_PARCEL", description: "" },
+    defaultValues: { awbNumber: "", complaintType: "DAMAGED_PARCEL", description: "" },
   });
 
-  const onSubmit = (data: any) => {
-    createComplaint.mutate({ data: { ...data, parcelId: parseInt(data.parcelId) } }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListComplaintsQueryKey() });
-        toast({ title: "Complaint raised" });
-        onClose();
-      },
-    });
+  const onSubmit = async (data: any) => {
+    try {
+      setIsFetchingAwb(true);
+      const token = localStorage.getItem("tms_token");
+      const res = await fetch(`/api/parcels/awb/${data.awbNumber}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Invalid AWB Number");
+      const parcel = await res.json();
+
+      createComplaint.mutate({ 
+        data: { 
+          parcelId: parcel.id,
+          complaintType: data.complaintType,
+          description: data.description 
+        } 
+      }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListComplaintsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+          toast({ title: "Complaint raised" });
+          onClose();
+        },
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsFetchingAwb(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-1">
-        <Label>Parcel ID</Label>
-        <Input type="number" {...register("parcelId", { required: true })} placeholder="Enter parcel ID" />
+        <Label>AWB Number</Label>
+        <Input type="text" {...register("awbNumber", { required: true })} placeholder="Enter AWB Number" />
       </div>
       <div className="space-y-1">
         <Label>Complaint Type</Label>
@@ -131,8 +154,8 @@ function NewComplaintForm({ onClose }: { onClose: () => void }) {
         <Label>Description</Label>
         <Textarea {...register("description", { required: true })} rows={3} />
       </div>
-      <Button type="submit" className="w-full" disabled={createComplaint.isPending}>
-        {createComplaint.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+      <Button type="submit" className="w-full" disabled={createComplaint.isPending || isFetchingAwb}>
+        {(createComplaint.isPending || isFetchingAwb) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
         Submit Complaint
       </Button>
     </form>

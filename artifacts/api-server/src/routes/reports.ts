@@ -39,8 +39,13 @@ router.get("/reports/hub-wise", requireAuth, requireRole("SUPER_ADMIN"), async (
     const [pending] = await db.select({ count: sql<number>`count(*)` }).from(parcelsTable)
       .where(and(hubWhere, or(eq(parcelsTable.currentStatus, "BOOKED"), eq(parcelsTable.currentStatus, "RECEIVED_AT_ORIGIN"), eq(parcelsTable.currentStatus, "DISPATCHED"), eq(parcelsTable.currentStatus, "READY_FOR_PICKUP"))!));
     const [rev] = await db.select({ total: sql<number>`coalesce(sum(charges::numeric), 0)` }).from(parcelsTable).where(and(dateWhere, hubWhere));
-    const [comps] = await db.select({ count: sql<number>`count(*)` }).from(complaintsTable)
-      .where(or(eq(complaintsTable.status, "RAISED"), eq(complaintsTable.status, "INVESTIGATING"))!);
+    const [comps] = await db.select({ count: sql<number>`count(*)` })
+      .from(complaintsTable)
+      .innerJoin(parcelsTable, eq(complaintsTable.parcelId, parcelsTable.id))
+      .where(and(
+        or(eq(complaintsTable.status, "RAISED"), eq(complaintsTable.status, "INVESTIGATING"))!,
+        or(eq(parcelsTable.sourceHubId, hub.id), eq(parcelsTable.destinationHubId, hub.id))!
+      ));
     return { hubId: hub.id, hubName: hub.hubName, hubCode: hub.hubCode, bookings: Number(bookings.count), deliveries: Number(deliveries.count), pending: Number(pending.count), revenue: Number(rev.total), complaints: Number(comps.count) };
   }));
   res.json(result);

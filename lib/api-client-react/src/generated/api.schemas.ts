@@ -91,9 +91,13 @@ export interface Parcel {
   awbNumber: string;
   senderName: string;
   senderPhone: string;
+  /** @nullable */
+  senderEmail?: string | null;
   senderAddress?: string;
   receiverName: string;
   receiverPhone: string;
+  /** @nullable */
+  receiverEmail?: string | null;
   receiverAddress?: string;
   numBoxes: number;
   weightKg: number;
@@ -142,9 +146,13 @@ export interface ParcelDetail {
   awbNumber: string;
   senderName: string;
   senderPhone: string;
+  /** @nullable */
+  senderEmail?: string | null;
   senderAddress?: string;
   receiverName: string;
   receiverPhone: string;
+  /** @nullable */
+  receiverEmail?: string | null;
   receiverAddress?: string;
   numBoxes: number;
   weightKg: number;
@@ -182,9 +190,11 @@ export interface ParcelListResponse {
 export interface ParcelInput {
   senderName: string;
   senderPhone: string;
+  senderEmail?: string;
   senderAddress: string;
   receiverName: string;
   receiverPhone: string;
+  receiverEmail?: string;
   receiverAddress: string;
   numBoxes: number;
   weightKg: number;
@@ -198,9 +208,11 @@ export interface ParcelInput {
 export interface ParcelUpdate {
   senderName?: string;
   senderPhone?: string;
+  senderEmail?: string;
   senderAddress?: string;
   receiverName?: string;
   receiverPhone?: string;
+  receiverEmail?: string;
   receiverAddress?: string;
   numBoxes?: number;
   weightKg?: number;

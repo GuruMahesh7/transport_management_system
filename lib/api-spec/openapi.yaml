@@ -977,12 +977,16 @@ components:
           type: string
         senderPhone:
           type: string
+        senderEmail:
+          type: ["string", "null"]
         senderAddress:
           type: string
         receiverName:
           type: string
         receiverPhone:
           type: string
+        receiverEmail:
+          type: ["string", "null"]
         receiverAddress:
           type: string
         numBoxes:
@@ -1030,12 +1034,16 @@ components:
           type: string
         senderPhone:
           type: string
+        senderEmail:
+          type: ["string", "null"]
         senderAddress:
           type: string
         receiverName:
           type: string
         receiverPhone:
           type: string
+        receiverEmail:
+          type: ["string", "null"]
         receiverAddress:
           type: string
         numBoxes:
@@ -1098,11 +1106,15 @@ components:
           type: string
         senderPhone:
           type: string
+        senderEmail:
+          type: string
         senderAddress:
           type: string
         receiverName:
           type: string
         receiverPhone:
+          type: string
+        receiverEmail:
           type: string
         receiverAddress:
           type: string
@@ -1128,11 +1140,15 @@ components:
           type: string
         senderPhone:
           type: string
+        senderEmail:
+          type: string
         senderAddress:
           type: string
         receiverName:
           type: string
         receiverPhone:
+          type: string
+        receiverEmail:
           type: string
         receiverAddress:
           type: string

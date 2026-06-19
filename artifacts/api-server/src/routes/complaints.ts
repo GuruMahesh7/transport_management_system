@@ -19,12 +19,23 @@ async function enrichComplaint(c: any) {
 
 router.get("/complaints", requireAuth, async (req, res) => {
   const { status, parcelId } = req.query;
+  const staff = (req as any).staff;
   const conditions: any[] = [];
+  
   if (status) conditions.push(eq(complaintsTable.status, status as string));
   if (parcelId) conditions.push(eq(complaintsTable.parcelId, parseInt(parcelId as string)));
+  if (staff.role !== "SUPER_ADMIN" && staff.hubId) {
+    conditions.push(or(eq(parcelsTable.sourceHubId, staff.hubId), eq(parcelsTable.destinationHubId, staff.hubId))!);
+  }
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
-  const rows = await db.select().from(complaintsTable).where(where).orderBy(desc(complaintsTable.createdAt));
+  const queryResult = await db.select()
+    .from(complaintsTable)
+    .leftJoin(parcelsTable, eq(complaintsTable.parcelId, parcelsTable.id))
+    .where(where)
+    .orderBy(desc(complaintsTable.createdAt));
+
+  const rows = queryResult.map(r => r.complaints);
   res.json(await Promise.all(rows.map(enrichComplaint)));
 });
 

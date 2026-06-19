@@ -3,6 +3,7 @@ import { db, parcelsTable, hubsTable, staffTable, parcelStatusHistoryTable } fro
 import { eq } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { createAuditLog } from "../lib/audit";
+import { sendParcelEmailNotification } from "../lib/email";
 
 const router = Router();
 
@@ -43,12 +44,29 @@ router.post("/scan", requireAuth, async (req, res) => {
     newStatus = next;
   }
 
+  if (staff.role !== "SUPER_ADMIN") {
+    if (newStatus === "RECEIVED_AT_ORIGIN" || newStatus === "DISPATCHED") {
+      if (staff.hubId !== parcel.sourceHubId) {
+        res.status(403).json({ error: "Only source hub staff can update to this status" });
+        return;
+      }
+    } else if (newStatus === "RECEIVED_AT_DESTINATION" || newStatus === "READY_FOR_PICKUP" || newStatus === "DELIVERED") {
+      if (staff.hubId !== parcel.destinationHubId) {
+        res.status(403).json({ error: "Only destination hub staff can update to this status" });
+        return;
+      }
+    }
+  }
+
   const hubIdToUse = hubId || staff.hubId || null;
   await db.update(parcelsTable).set({ currentStatus: newStatus }).where(eq(parcelsTable.id, parcel.id));
   await db.insert(parcelStatusHistoryTable).values({ parcelId: parcel.id, status: newStatus, hubId: hubIdToUse, updatedBy: staff.id, notes: notes || null });
   await createAuditLog({ action: "SCAN", entityType: "parcel", entityId: parcel.id, oldValue: { status: previousStatus }, newValue: { status: newStatus }, performedBy: staff.id, hubId: hubIdToUse, description: `Scanned parcel ${awbNumber}: ${previousStatus} → ${newStatus}` });
 
   const [updated] = await db.select().from(parcelsTable).where(eq(parcelsTable.id, parcel.id)).limit(1);
+  sendParcelEmailNotification(updated, newStatus).catch(err => {
+    console.error("Failed to send scan email notification:", err);
+  });
   const history = await db.select().from(parcelStatusHistoryTable).where(eq(parcelStatusHistoryTable.parcelId, parcel.id)).orderBy(parcelStatusHistoryTable.timestamp);
 
   const [src] = await db.select({ hubName: hubsTable.hubName, hubCode: hubsTable.hubCode }).from(hubsTable).where(eq(hubsTable.id, updated.sourceHubId)).limit(1);

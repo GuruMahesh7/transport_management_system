@@ -17,9 +17,11 @@ import { useToast } from "@/hooks/use-toast";
 const schema = z.object({
   senderName: z.string().min(1, "Required"),
   senderPhone: z.string().min(10, "Valid phone required"),
+  senderEmail: z.string().email("Valid email required").optional().or(z.literal("")),
   senderAddress: z.string().min(1, "Required"),
   receiverName: z.string().min(1, "Required"),
   receiverPhone: z.string().min(10, "Valid phone required"),
+  receiverEmail: z.string().email("Valid email required").optional().or(z.literal("")),
   receiverAddress: z.string().min(1, "Required"),
   numBoxes: z.coerce.number().min(1),
   weightKg: z.coerce.number().min(0.1),
@@ -93,6 +95,11 @@ export default function ParcelNew() {
               {errors.senderPhone && <p className="text-destructive text-xs">{errors.senderPhone.message}</p>}
             </div>
             <div className="space-y-1">
+              <Label htmlFor="senderEmail">Email (optional)</Label>
+              <Input id="senderEmail" type="email" {...register("senderEmail")} data-testid="input-sender-email" />
+              {errors.senderEmail && <p className="text-destructive text-xs">{errors.senderEmail.message}</p>}
+            </div>
+            <div className="space-y-1 md:col-span-2">
               <Label htmlFor="senderAddress">Address</Label>
               <Input id="senderAddress" {...register("senderAddress")} data-testid="input-sender-address" />
               {errors.senderAddress && <p className="text-destructive text-xs">{errors.senderAddress.message}</p>}
@@ -114,6 +121,11 @@ export default function ParcelNew() {
               {errors.receiverPhone && <p className="text-destructive text-xs">{errors.receiverPhone.message}</p>}
             </div>
             <div className="space-y-1">
+              <Label htmlFor="receiverEmail">Email (optional)</Label>
+              <Input id="receiverEmail" type="email" {...register("receiverEmail")} data-testid="input-receiver-email" />
+              {errors.receiverEmail && <p className="text-destructive text-xs">{errors.receiverEmail.message}</p>}
+            </div>
+            <div className="space-y-1 md:col-span-2">
               <Label htmlFor="receiverAddress">Address</Label>
               <Input id="receiverAddress" {...register("receiverAddress")} data-testid="input-receiver-address" />
               {errors.receiverAddress && <p className="text-destructive text-xs">{errors.receiverAddress.message}</p>}
@@ -156,6 +168,7 @@ export default function ParcelNew() {
               <Select
                 defaultValue={user?.hubId ? String(user.hubId) : undefined}
                 onValueChange={v => setValue("sourceHubId", parseInt(v))}
+                disabled={user?.role !== "SUPER_ADMIN"}
               >
                 <SelectTrigger data-testid="select-source-hub"><SelectValue placeholder="Select hub" /></SelectTrigger>
                 <SelectContent>
