@@ -100,6 +100,10 @@ router.post("/parcels", requireAuth, async (req, res) => {
   });
   await createAuditLog({ action: "CREATE", entityType: "parcel", entityId: parcel.id, newValue: { awbNumber, currentStatus: "BOOKED" }, performedBy: staff.id, hubId: sourceHubId, description: `Booked parcel ${awbNumber}` });
 
+  sendParcelEmailNotification(parcel, "BOOKED").catch(err => {
+    console.error("Failed to send booking email notification:", err);
+  });
+
   res.status(201).json(await enrichParcel(parcel));
 });
 

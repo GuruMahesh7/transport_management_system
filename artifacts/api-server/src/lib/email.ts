@@ -49,6 +49,16 @@ export async function sendParcelEmailNotification(parcel: any, status: string) {
         <p>Thank you for choosing Transport Manager!</p>
       </div>
     `;
+  } else if (status === "BOOKED") {
+    subject = `Parcel ${awbNumber} Booking Confirmed`;
+    html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2 style="color: #3B82F6;">Parcel Booking Confirmed</h2>
+        <p>Hello ${senderName} / ${receiverName},</p>
+        <p>Your parcel with AWB Number <strong>${awbNumber}</strong> has been successfully booked.</p>
+        <p>Thank you for choosing Transport Manager!</p>
+      </div>
+    `;
   } else {
     return;
   }
