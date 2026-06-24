@@ -39,6 +39,16 @@ export async function sendParcelEmailNotification(parcel: any, status: string) {
         <p>Thank you for choosing Transport Manager!</p>
       </div>
     `;
+  } else if (status === "DISPATCHED") {
+    subject = `Parcel ${awbNumber} Dispatched (In Transit)`;
+    html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2 style="color: #F59E0B;">Parcel Status Update</h2>
+        <p>Hello ${senderName} / ${receiverName},</p>
+        <p>Your parcel with AWB Number <strong>${awbNumber}</strong> has been dispatched and is currently in transit towards its destination.</p>
+        <p>Thank you for choosing Transport Manager!</p>
+      </div>
+    `;
   } else {
     return;
   }
