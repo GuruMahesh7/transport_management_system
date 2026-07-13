@@ -10,6 +10,10 @@ import { ArrowLeft, Package, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QRCode from "qrcode";
 import { Link } from "wouter";
+import { Receipt } from "@/components/receipt";
+import { Printer, Share2 } from "lucide-react";
+import html2canvas from "html2canvas";
+import { useRef } from "react";
 
 const STATUS_COLORS: Record<string, string> = {
   BOOKED: "bg-blue-100 text-blue-800 border-blue-200",
@@ -46,6 +50,8 @@ export default function ParcelDetail() {
   const queryClient = useQueryClient();
   const parcelId = parseInt(params.id);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const { data: parcel, isLoading } = useGetParcel(parcelId, {
     query: { enabled: !!parcelId, queryKey: getGetParcelQueryKey(parcelId) },
@@ -89,8 +95,63 @@ export default function ParcelDetail() {
     }
   }
 
+  const handleShare = async () => {
+    if (!parcel || !receiptRef.current) return;
+    
+    setIsSharing(true);
+    try {
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById('receipt-capture-container');
+          if (el) {
+            el.style.display = 'block';
+            el.style.position = 'absolute';
+            el.style.top = '0';
+            el.style.left = '0';
+          }
+        }
+      });
+      
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        
+        const file = new File([blob], `receipt_${parcel.awbNumber}.png`, { type: 'image/png' });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'Parcel Receipt',
+              text: `Receipt for AWB: ${parcel.awbNumber}`,
+            });
+          } catch (err) {
+            // User cancelled share or failed
+          }
+        } else {
+          // Fallback to downloading the image
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `receipt_${parcel.awbNumber}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast({ title: "Receipt Downloaded", description: "Your receipt has been saved." });
+        }
+      }, 'image/png');
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to generate receipt image.", variant: "destructive" });
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <>
+    <div className="max-w-3xl mx-auto space-y-6 print:hidden">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => setLocation("/parcels")}>
           <ArrowLeft className="w-4 h-4 mr-1" /> Back
@@ -194,10 +255,24 @@ export default function ParcelDetail() {
       </div>
 
       <div className="flex gap-2">
+        <Button variant="outline" onClick={() => window.print()} data-testid="button-print">
+          <Printer className="w-4 h-4 mr-2" />
+          Print Receipt
+        </Button>
+        <Button variant="outline" onClick={handleShare} disabled={isSharing} data-testid="button-share">
+          {isSharing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Share2 className="w-4 h-4 mr-2" />}
+          Share
+        </Button>
         <Button variant="outline" onClick={() => setLocation(`/complaints?parcelId=${parcel.id}`)} data-testid="button-raise-complaint">
           Raise Complaint
         </Button>
       </div>
     </div>
+    <div id="receipt-capture-container" className="hidden print:block absolute inset-0 bg-white print:static w-full">
+      <div ref={receiptRef} className="bg-white min-w-[800px] w-max p-8">
+        <Receipt parcel={parcel} />
+      </div>
+    </div>
+    </>
   );
 }
