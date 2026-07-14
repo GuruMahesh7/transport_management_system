@@ -99,19 +99,20 @@ export default function ParcelDetail() {
     if (!parcel || !receiptRef.current) return;
     
     setIsSharing(true);
+    const container = document.getElementById('receipt-capture-container');
+    if (container) {
+      container.classList.remove('opacity-0', 'z-[-50]');
+      container.classList.add('opacity-100', 'z-50');
+    }
+
+    // Give the browser a moment to apply styles
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     try {
       const canvas = await html2canvas(receiptRef.current, {
         scale: 2,
         backgroundColor: "#ffffff",
-        onclone: (clonedDoc) => {
-          const el = clonedDoc.getElementById('receipt-capture-container');
-          if (el) {
-            el.style.display = 'block';
-            el.style.position = 'absolute';
-            el.style.top = '0';
-            el.style.left = '0';
-          }
-        }
+        logging: true,
       });
       
       canvas.toBlob(async (blob) => {
@@ -142,9 +143,14 @@ export default function ParcelDetail() {
           toast({ title: "Receipt Downloaded", description: "Your receipt has been saved." });
         }
       }, 'image/png');
-    } catch (err) {
-      toast({ title: "Error", description: "Failed to generate receipt image.", variant: "destructive" });
+    } catch (err: any) {
+      console.error("HTML2CANVAS ERROR:", err);
+      toast({ title: "Error", description: `Failed to generate: ${err?.message || err}`, variant: "destructive" });
     } finally {
+      if (container) {
+        container.classList.remove('opacity-100', 'z-50');
+        container.classList.add('opacity-0', 'z-[-50]');
+      }
       setIsSharing(false);
     }
   };
@@ -268,7 +274,7 @@ export default function ParcelDetail() {
         </Button>
       </div>
     </div>
-    <div id="receipt-capture-container" className="hidden print:block absolute inset-0 bg-white print:static w-full">
+    <div id="receipt-capture-container" className="absolute top-0 left-0 w-full z-[-50] pointer-events-none opacity-0 print:opacity-100 print:relative print:z-auto">
       <div ref={receiptRef} className="bg-white min-w-[800px] w-max p-8">
         <Receipt parcel={parcel} />
       </div>

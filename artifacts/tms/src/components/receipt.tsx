@@ -4,22 +4,34 @@ export function Receipt({ parcel }: { parcel: any }) {
   if (!parcel) return null;
 
   return (
-    <div className="hidden print:block w-full max-w-4xl mx-auto bg-white text-black p-4 text-sm" style={{ fontFamily: 'sans-serif' }}>
+    <div className="receipt-container w-full max-w-4xl mx-auto p-4 text-sm" style={{ fontFamily: 'sans-serif', backgroundColor: '#ffffff', color: '#000000' }}>
+      <style>{`
+        .receipt-container .border-black { border-color: #000000 !important; }
+        .receipt-container .border-green-600 { border-color: #16a34a !important; }
+        .receipt-container .border-indigo-500 { border-color: #6366f1 !important; }
+        .receipt-container .text-red-600 { color: #dc2626 !important; }
+        .receipt-container .bg-red-600 { background-color: #dc2626 !important; }
+        .receipt-container .text-white { color: #ffffff !important; }
+        .receipt-container .text-black { color: #000000 !important; }
+        .receipt-container .bg-white { background-color: #ffffff !important; }
+      `}</style>
       {/* Header */}
       <div className="border border-black flex flex-col">
         <div className="flex justify-between items-center border-b border-black p-2">
-          <div className="flex flex-col items-center justify-center border border-black p-2 rounded-full w-20 h-20">
-            <span className="font-bold text-lg">STC</span>
-            <span className="text-[10px] whitespace-nowrap">SIDDIPET TRANSPORT</span>
+          <div className="flex flex-col items-center justify-center p-2 w-24 h-24">
+            <div className="border-2 border-green-600 rounded-full w-14 h-14 flex items-center justify-center mb-1 bg-white">
+              <span className="font-bold text-xl text-black">SSLS</span>
+            </div>
+            <span className="text-[12px] font-bold text-red-600 whitespace-nowrap">SSLS TRANSPORT</span>
           </div>
           <div className="text-center flex-1 px-4">
-            <h1 className="text-2xl font-bold text-red-600 mb-1">SIDDIPET TRANSPORT COMPANY</h1>
-            <p className="text-xs">BOOKING OFFICE : 15-2-449/2, Opp, Aryasamaj Building, Kishan Gunj, Hyd., Ph : 9866193455, 9392832855</p>
-            <p className="text-xs font-bold">H.O. : D.No. 6-1-111, Near Kaman, Siddipet. Cell : 9490200408</p>
+            <h1 className="text-2xl font-bold text-red-600 mb-1">SHIVA SHANKARA LORRY SERVICE</h1>
+            <p className="text-xs font-bold text-black">BOOKING OFFICE : 15-2-449/2, Opp, Aryasamaj Building, Kishan Gunj, Hyd., Ph : 9886193455, 9392832855</p>
+            <p className="text-xs font-bold text-black mt-1">H.O. : D.No. 6-1-111, Near Kaman, Siddipet. Cell : 9490200408</p>
           </div>
-          <div className="text-right text-xs text-red-600 font-bold min-w-[150px]">
-            <p>GSTIN. 36AMNPB0778R1ZD</p>
-            <p className="text-lg">Cell : 9392832855</p>
+          <div className="text-right text-xs text-red-600 font-bold min-w-[160px] flex flex-col justify-between h-full py-2">
+            <p className="text-[10px]">GSTIN. 36AMNPB0778R1ZD</p>
+            <p className="text-xl mt-4">Cell : 9392832855</p>
           </div>
         </div>
 
@@ -76,9 +88,12 @@ export function Receipt({ parcel }: { parcel: any }) {
           </div>
 
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
-            <div className="text-6xl font-bold text-center">
-              <div>60</div>
-              <div className="text-xl">YEARS</div>
+            <div className="text-center font-bold" style={{ color: '#6366f1' }}>
+              <div className="text-6xl border-4 border-indigo-500 rounded-full inline-flex items-center justify-center w-32 h-32 mb-2">20</div>
+              <div className="text-xl mb-2">YEARS</div>
+              <div className="text-4xl italic">Shiva Shankara</div>
+              <div className="text-3xl italic mb-2">Lorry Service</div>
+              <div className="text-lg italic">20 years experience</div>
             </div>
           </div>
         </div>

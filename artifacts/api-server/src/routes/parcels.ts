@@ -92,15 +92,15 @@ router.post("/parcels", requireAuth, async (req, res) => {
   const [parcel] = await db.insert(parcelsTable).values({
     awbNumber, senderName, senderPhone, senderEmail: senderEmail || null, senderAddress, receiverName, receiverPhone, receiverEmail: receiverEmail || null, receiverAddress,
     numBoxes, weightKg: String(weightKg), parcelType, charges: String(charges), remarks: remarks || null,
-    sourceHubId, destinationHubId, currentStatus: "BOOKED", bookedBy: staff.id,
+    sourceHubId, destinationHubId, currentStatus: "RECEIVED_AT_ORIGIN", bookedBy: staff.id,
   }).returning();
 
   await db.insert(parcelStatusHistoryTable).values({
-    parcelId: parcel.id, status: "BOOKED", hubId: sourceHubId, updatedBy: staff.id, notes: "Parcel booked",
+    parcelId: parcel.id, status: "RECEIVED_AT_ORIGIN", hubId: sourceHubId, updatedBy: staff.id, notes: "Parcel booked and received at origin",
   });
-  await createAuditLog({ action: "CREATE", entityType: "parcel", entityId: parcel.id, newValue: { awbNumber, currentStatus: "BOOKED" }, performedBy: staff.id, hubId: sourceHubId, description: `Booked parcel ${awbNumber}` });
+  await createAuditLog({ action: "CREATE", entityType: "parcel", entityId: parcel.id, newValue: { awbNumber, currentStatus: "RECEIVED_AT_ORIGIN" }, performedBy: staff.id, hubId: sourceHubId, description: `Booked parcel ${awbNumber}` });
 
-  sendParcelEmailNotification(parcel, "BOOKED").catch(err => {
+  sendParcelEmailNotification(parcel, "RECEIVED_AT_ORIGIN").catch(err => {
     console.error("Failed to send booking email notification:", err);
   });
 
